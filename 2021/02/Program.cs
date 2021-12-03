@@ -20,20 +20,23 @@ namespace aoc
             var commands = LoadCommands("input.txt");
             var dist = 0;
             var depth = 0;
+            var aim = 0;
             foreach (var instr in commands)
             {
                 switch(instr.CommandId){
-                    case "up": depth -= instr.NumericValue;
+                    case "up": aim -= instr.NumericValue;
                         break;
-                    case "down": depth += instr.NumericValue;
+                    case "down": aim += instr.NumericValue;
                         break;
-                    case "forward": dist += instr.NumericValue;
+                    case "forward":
+                        dist += instr.NumericValue;
+                        depth += aim * instr.NumericValue;
                         break;
                 }
             }
 
 
-            (dist * depth).AsResult1();
+            (dist * depth).AsResult2();
             Report.End();
         }
 
