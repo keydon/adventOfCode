@@ -95,6 +95,35 @@ namespace aoc
             Console.WriteLine($"maxX: {MaxX}, maxY: {MaxY}, total: {AllFields.Count}");
         }
 
+        internal void Remove(Point2 p)
+        {
+            if (Dic.TryGetValue(p, out var val)){
+                AllFields.Remove(val);
+                Dic.Remove(p);
+
+                MaxX = AllFields.Max(f => f.Pos.X);
+                MaxY = AllFields.Max(f => f.Pos.Y);
+                MinX = AllFields.Min(f => f.Pos.X);
+                MinY = AllFields.Min(f => f.Pos.Y);
+            }
+        }
+
+        internal void BulkTrim(List<Point2> border)
+        {
+            foreach (var p in border)
+            {
+                if (Dic.TryGetValue(p, out var val)){
+                    AllFields.Remove(val);
+                    Dic.Remove(p);
+                }   
+            }
+             
+                MaxX = AllFields.Max(f => f.Pos.X);
+                MaxY = AllFields.Max(f => f.Pos.Y);
+                MinX = AllFields.Min(f => f.Pos.X);
+                MinY = AllFields.Min(f => f.Pos.Y);
+        }
+
         public IEnumerable<T> GetNeighbours(T foo, Action<T> initNew = null)
         {
             return GetNeighbours(foo.Pos, initNew);

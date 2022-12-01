@@ -164,6 +164,7 @@ namespace aoc
             ("L", 270) => Rotation.RIGHT,
             ("R", _) => Rotation.RIGHT,
             ("L", _) => Rotation.LEFT,
+            _ => throw new NotImplementedException("Cannot rotate " + direction + ", dregees: " + degrees),
         };
         public static Direction ParseDirection(string direction)
         {
@@ -219,6 +220,7 @@ namespace aoc
             Direction.RIGHT => p.Right(step),
             Direction.LEFT => p.Left(step),
             Direction.DOWN => p.Down(step),
+            _ => throw new NotImplementedException("Cannot move in direction: " + direction),
         };
 
         public static Point2 RotateRight(this Point2 p, Point2 rel = default) => new Point2(((p.Y - rel.Y) * -1) + rel.X, (p.X - rel.X) + rel.Y);
@@ -277,6 +279,7 @@ namespace aoc
             Direction.RIGHT => p.Right(step),
             Direction.LEFT => p.Left(step),
             Direction.DOWN => p.Down(step),
+            _ => throw new NotImplementedException("Cannot move in direction: " + direction),
         };
 
         public static Point RotateRight(this Point p, Point rel = default) => new Point(((p.Y - rel.Y) * -1) + rel.X, (p.X - rel.X) + rel.Y);
@@ -339,6 +342,7 @@ namespace aoc
             Direction.RIGHT => p.Right(step),
             Direction.LEFT => p.Left(step),
             Direction.DOWN => p.Down(step),
+            _ => throw new NotImplementedException("Cannot move in direction " + direction),
         };
 
         public static IEnumerable<Vector3> GetNeighbours(this Vector3 p)

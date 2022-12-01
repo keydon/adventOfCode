@@ -66,7 +66,8 @@ namespace aoc
         internal static void End()
         {
             Console.WriteLine("END. Clipbord: " + copyInfo + ": " + lastResult);
-            Console.Beep(800, 200);
+            if (OperatingSystem.IsWindows())
+                Console.Beep(800, 200);
         }
 
         public static T AsResult1<T>(this T result)

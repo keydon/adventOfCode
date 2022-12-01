@@ -30,6 +30,12 @@ namespace aoc
 
         public int X { get; set; }
         public int Y { get; set; }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(X,Y);
+        }
+
         public IEnumerable<IPointish> GetNeighbours()
         {
             for (int x = X - 1; x <= X + 1; x++)
@@ -48,6 +54,11 @@ namespace aoc
             yield return this.Down();
             yield return this.Left();
             yield return this.Right();
+        }
+
+        public override string ToString()
+        {
+            return new Point(X,Y).ToString();
         }
 
         public static implicit operator Point2(Point p) => new Point2(p.X, p.Y);
