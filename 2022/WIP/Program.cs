@@ -47,6 +47,8 @@ namespace aoc
              //  {
              //      X = int.Parse(m.Groups[1].Value),
              //      Y = int.Parse(m.Groups[2].Value),
+             //      A = m.Groups[1].Value,
+             //      B = m.Groups[2].Value,
              //  }))
              //.Where(f = f)
              //.ToDictionary(
@@ -57,7 +59,7 @@ namespace aoc
              .ToList()
             ;
 
-            //return foos;
+            return foos;
         }
     }
 }
