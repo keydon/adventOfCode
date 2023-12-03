@@ -3,6 +3,7 @@ using System.Diagnostics;
 
 namespace aoc
 {
+    
     public static class Symbols {
         public static string Empty => " ";
         public static string Full => "█";
