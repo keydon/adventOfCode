@@ -24,17 +24,23 @@ namespace aoc
         static void Main(string[] args)
         {
             Report.Start();
-            var nonSymbols = new[] {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "."};
-            var nums = new[] {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+            var nums = Enumerable.Range(0, 10).Select(n => n.ToString()).ToList();
+            var nonSymbols = new List<String>(nums)
+            {
+                "."
+            };
+            
 
             var foos = LoadFoos("input.txt");
             //foos = LoadFoos("sample.txt");
             var field = new Field<Point2, Foo<Point2>>(OutOfBoundsStrategy.RETURN_NULL);
             field.Add(foos);
-            var adj = field.AllFields.Where(f => !nonSymbols.Contains(f.A)).Peek().ToList();
-            var partnums = new List<long>();
+            var adj = field.AllFields.Where(f => f.A == "*").ToList();
+            
+                        var gears = new List<long>();
             foreach (var item in adj)
             {
+                var partnums = new List<long>();
                 var ns = field.GetNeighbours(item)
                     .Where(a => nums.Contains(a.A)).ToList();
                     ns.Select(x => x.A).ToCommaString();
@@ -63,10 +69,14 @@ namespace aoc
                     ns = ns2;
                     ns.Select(x => x.A).ToCommaString();
                     l = ns.Count;
-                }   
+                } 
+
+                if(partnums.Count == 2){
+                    gears.Add(partnums.MultiplyAll());
+                }  
             }
             field.ToConsole((a) => a.A);
-            partnums.Sum().AsResult1();
+            gears.Sum().AsResult2();
             Report.End();
         }
 
@@ -89,7 +99,7 @@ namespace aoc
                 grp.AddLast(n);
             }
             if(grp.Count > 0)
-            yield return grp.ToList();
+                yield return grp.ToList();
         }
 
         public static List<Foo<Point2>> LoadFoos(string inputTxt)
