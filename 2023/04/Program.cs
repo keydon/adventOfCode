@@ -6,13 +6,13 @@ using System.Linq;
 
 namespace aoc
 {
-    record Foo
+    record Card
     {
-        public int X { get; set; }
-        public List<int> W { get; set; }
+        public int Id { get; set; }
+        public List<int> Winners { get; set; }
 
-        public List<int> H { get; set; }
-        public string B { get; set; }
+        public List<int> Hand { get; set; }
+        public int Copies { get; set; } = 1;
 
     }
     class Program
@@ -20,48 +20,43 @@ namespace aoc
         static void Main(string[] args)
         {
             Report.Start();
-            var foos = LoadFoos("input.txt");
+            var cards = LoadCards("input.txt");
             //foos = LoadFoos("sample.txt");
 
-            foos.Select(c => c.H.Intersect(c.W).Count())
-                .Where(c => c > 0)
-                .Select(c => c == 1 ? 1 : Math.Pow(2, c-1))
-                .Sum().AsResult1();
+            cards.Select(c => {
+                var winningNums = c.Hand.Intersect(c.Winners).Count();
+                ApplyCopies(winningNums, c.Id, cards, c.Copies);
+                return c.Copies;
+            })
+            .Sum().AsResult2();
 
 
             Report.End();
         }
 
-        public static List<Foo> LoadFoos(string inputTxt)
+        private static void ApplyCopies(int times, int startCardId, List<Card> cards, int additionalCopies)
         {
-            var foos = File
+            cards.SkipWhile(f => f.Id != startCardId).Skip(1)
+            .Take(times)
+            .ForEach(f => f.Copies += additionalCopies);
+        }
+
+        public static List<Card> LoadCards(string inputTxt)
+        {
+            var cards = File
                 .ReadAllLines(inputTxt)
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Select(s => s.Trim())
-
-             //.GroupByLineSeperator()
-             //.Parse2DMap((p, t) => new Foo<Point2> { Pos = p, A = t })
-             //.SelectMany(r => r.Splizz(",", ";"))
-             //.Where(a => a.foo == '#')
-             //.Select(int.Parse)
-             //.Select(long.Parse)  
-             .Select(s => s.ParseRegex(@"^Card (.+): (.+) \| (.+)$", m => new Foo()
-               {
-                   X = int.Parse(m.Groups[1].Value),
-                   W = m.Groups[2].Value.Splizz(" ").Select(int.Parse).ToList(),
-                   H = m.Groups[3].Value.Splizz(" ").Select(int.Parse).ToList(),
-                   
-               }))
-             //.Where(f = f)
-             //.ToDictionary(
-             //    (a) => new Vector3(a.x, a.y),
-             //    (a) => new Foo(new Vector3(a.x, a.y))
-             //);
-             //.ToArray()
-             .ToList()
+                .Select(s => s.ParseRegex(@"^Card (.+): (.+) \| (.+)$", m => new Card()
+                {
+                   Id = int.Parse(m.Groups[1].Value),
+                   Winners = m.Groups[2].Value.Splizz(" ").Select(int.Parse).ToList(),
+                   Hand = m.Groups[3].Value.Splizz(" ").Select(int.Parse).ToList(),
+                }))
+                .ToList()
             ;
 
-            return foos;
+            return cards;
         }
     }
 }
