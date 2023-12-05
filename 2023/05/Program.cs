@@ -9,9 +9,10 @@ namespace aoc
     record State
     {
         public string Unit { get; set; }
-        public List<long> Values { get; set; }
+        public List<LongRange> Values { get; set; }
 
     }
+
 
     record Conversion{
         public string FromUnit { get; set; }
@@ -22,8 +23,13 @@ namespace aoc
         {
             var newState = new State(){
                 Unit = ToUnit,
-                Values = currentState.Values.Select(
-                    v => Ranges.Where(r => r.Matches(v)).Select(r => r.Convert(v)).First()
+                Values = currentState.Values.SelectMany(
+                    v => {
+                        var conversions = Ranges.Where(r => r.Matches(v)).Select(r => r.Convert(v)).ToList();
+                        if(conversions.Count == 0)
+                            return new List<LongRange>(){ v};
+                        return conversions;
+                    }
                 ).ToList()
             };
             return newState;
@@ -33,28 +39,35 @@ namespace aoc
     record ConvRange {
         public long SourceStart { get; set; }
         public long DestinationStart { get; set; }
+        public long Offset {get; set; }
         public long Length { get; set; }
+        public LongRange Range {get; set; }
 
-        internal virtual long Convert(long v)
+        internal virtual LongRange Convert(LongRange v)
         {
-            var offset = v - SourceStart;
-            return DestinationStart + offset;
+            var intersect = v.Intersect(Range);
+            var offset = DestinationStart - SourceStart; 
+            var converted = new LongRange(){
+                Start = intersect.Start + offset,
+                End = intersect.End + offset
+            };
+            converted.Debug("Offeset: " + Offset);
+            return converted;
         }
 
-        internal virtual bool Matches(long v)
+        internal virtual bool Matches(LongRange v)
         {
-            return v >= SourceStart 
-            && v <= SourceStart + Length;
+            return v.DoesIntersect(Range);
         }
     }
 
     record NoopConvRange : ConvRange {
-        internal override long Convert(long v)
+        internal override LongRange Convert(LongRange v)
         {
             return v;
         }
 
-        internal override bool Matches(long v)
+        internal override bool Matches(LongRange v)
         {
             return true;
         }
@@ -78,19 +91,35 @@ namespace aoc
 
             var targetUnit = "location";
             var currentState = foos.State;
+            currentState.Values.Count().Debug("Exp");
             while(true){
                 if(targetUnit == currentState.Unit){
                     break;
                 }
                 var conv = convMap[currentState.Unit];
                 currentState = conv.Apply(currentState);
+                currentState.Debug(currentState.Unit);
+                currentState.Values.Peek().ToList();
             }
 
             currentState.Debug("Final");
-            currentState.Values.Min().AsResult1();
+            currentState.Values.Select(r => r.Start).Min().AsResult2();
 
 
             Report.End();
+        }
+
+        private static IEnumerable<long> Expand(List<long> values)
+        {
+            for (int i = 0; i < values.Count; i+=2)
+            {
+                var start =  values[i];
+                var iters = values[i+1];
+                for (long l = start; l < start + iters; l++)
+                {
+                    yield return l;
+                }
+            }
         }
 
         public static INput LoadFoos(string inputTxt)
@@ -103,9 +132,18 @@ namespace aoc
              .GroupByLineSeperator().ToList();
 
              var init = foos.First().First().Splizz(":", " ").ToList();
+
+            List<LongRange> longRanges = init.Skip(1)
+                .Select(long.Parse)
+                .Chunk(2)
+                .Select(chunk => new LongRange(){
+                     Start = chunk.First(),
+                     End = chunk.First() + chunk.Last() -1
+                }).ToList();
+
              var initState = new State() {
                  Unit = init.First(),
-                 Values = init.Skip(1).Select(long.Parse).ToList()
+                 Values = longRanges
              };
 
              var convs = foos.Skip(1)
@@ -117,12 +155,17 @@ namespace aoc
                         .Select(long.Parse)
                         .ToList();
                     return new ConvRange(){
-                         DestinationStart = parts.First(),
+                          DestinationStart = parts.First(),
                           SourceStart = parts[1],
-                           Length = parts.Last()
+                          Offset = parts.First() -parts[1],
+                          Length = parts.Last(),
+                          Range = new LongRange(){
+                             Start = parts[1],
+                             End = parts[1] + parts.Last() -1
+                          }
                     };
                 }).ToList();
-                convRanges.Add(new NoopConvRange());
+                //convRanges.Add(new NoopConvRange());
                 
                 var conv = new Conversion(){
                  FromUnit = header.First(),
