@@ -6,142 +6,106 @@ using System.Linq;
 
 namespace aoc
 {
-    record Foo<TPoint> : IHasPosition<TPoint>
-        where TPoint : IPointish
-    {
-        public int X { get; set; }
-        public int Y { get; set; }
+    record Digit {
+        public int NumericValue { get; set;}
+        public string AsNumberStr {get; set; }
+        public string AsWord {get; set; }
 
-        public string A { get; set; }
-        public string B { get; set; }
-
-        public TPoint Pos { get; set; }
-
+        public Digit(int value, string word){
+            NumericValue = value;
+            AsWord = word;
+            AsNumberStr = value.ToString();
+        }
+    }
+    record Occurance {
+        public int Index { get; set; }
+        public Digit Digit { get; set; }
     }
     class Program
     {
         static void Main(string[] args)
         {
             Report.Start();
-            var foos = LoadFoos("input.txt");
-            //foos = LoadFoos("sample.txt");
-            var rocks = new HashSet<Point2>();
-            var sandSource = new Point2(500,0);
+            var doc = LoadCalibrationDocument("input.txt");
+            //doc = LoadCalibrationDocument("sample2.txt");
 
-            foreach (var path in foos)
-            {
-                var waypoints = path.Splizz("->")
-                    .Select(p => p.Splizz(",").Select(p => int.Parse(p)).ToList())
-                    .Select(p => new Point2(p.First(), p.Last()))
-                    .ToList();
-                for (int i = 1; i < waypoints.Count; i++)
-                {
-                    var start = waypoints[i-1].Debug("start");
-                    var end = waypoints[i].Debug("end");
-                    if(start.X == end.X) 
-                        Enumerable.Range(0, Math.Abs(start.Y-end.Y)+1)
-                            .Select(y => new Point2(start.X, Math.Min(start.Y, end.Y) +y))
-                            .ForEach(r => rocks.Add(r));
-                    
-                    if(start.Y == end.Y) 
-                        Enumerable.Range(0,Math.Abs(start.X-end.X)+1)
-                            .Select(x => new Point2(Math.Min(start.X, end.X)+x, end.Y))
-                            .ForEach(r => rocks.Add(r));
-                }
-            }
-            var abyss = rocks.Max(r => r.Y)+1;
-            var sands = new HashSet<Point2>(rocks);
-            sands.Count().Debug("INITS");
-            var go = true;
-            var a = 0;
-            while(go){
-                a++;
-                var sand = sandSource;
-                go = true;
-                while(true) {
-                    //sand.Debug("rel");
-                    
-                    //if(sand.Y > abyss+2) {go = false.Debug(abyss); break;}
+            var digits = new List<Digit>(){
+                new (0, "zero"),
+                new (1, "one"),
+                new (2, "two"),
+                new (3, "three"),
+                new (4, "four"),
+                new (5, "five"),
+                new (6, "six"),
+                new (7, "seven"),
+                new (8, "eight"),
+                new (9, "nine"),
+            };
 
-                    if(!sands.Contains(sand.Down()) && !(sand.Down().Y > abyss))
-                    {
-                        sand = sand.Down();
-                        continue;
-                    }
-
-                    var possis = new List<List<Point2>>(){
-                        new List<Point2>(){sand.Left().Down() }, 
-                        new List<Point2>(){sand.Right().Down() }
-                    };
-                    var free = possis.Where(path => path.All(p => !sands.Contains(p) && !(sand.Down().Y > abyss))).Select(path => path.First()).FirstOrDefault();
-                    
-                    //var next = possis.Debug().Where(p => !sands.Contains(p)).FirstOrDefault();
-                    if(free == null){
-                        //"bottom".Debug();
-                        //Console.ReadKey();
-                        //sands.ToConsole();
-                        //go = false;
-                        break;
-                    }
-                    
-                    sand = free;
-                    continue;
-                }
-                //go.Debug("go");
-                //sand.Debug("sand");
-                
-                if(go)
-                    if(sands.Add(sand.Debug("added")))
-                        continue;
-                    else break;
-                
-                //go.Debug("end loopw");
-            }
-            
-            //sands.Except(rocks).ToConsole();
-
-            sands.Except(rocks).Count().AsResult1();
-            sands.Add(sandSource);
-            //sands.Union(rocks).ToConsole(pr => pr == sandSource ? "+": rocks.Contains(pr) ? "#": "o");
-
-            a.Debug("AAA");
-            sands.Count().Debug("sand ocunt");
-            rocks.ToCommaString().Debug("rocky rocks");
+            SumOfRecoveredCalibrarionValues(doc, digits, FindNumericDigits)
+                .AsResult1();
+            SumOfRecoveredCalibrarionValues(doc, digits, FindNumericAndWordDigits)
+                .AsResult2();
 
             Report.End();
         }
 
-        public static List<string> LoadFoos(string inputTxt)
+        private static string[] FindNumericDigits(Digit d) => new[] { d.AsNumberStr };
+
+        private static string[] FindNumericAndWordDigits(Digit d) => new[] { d.AsNumberStr, d.AsWord };
+
+        private static long SumOfRecoveredCalibrarionValues(List<string> doc, List<Digit> digits, Func<Digit,string[]> findingStrategy)
         {
-            var foos = File
+            return doc
+                .Select(line => digits
+                    .SelectMany(digit => FindOccurances(digit, line, findingStrategy))
+                    .OrderBy(occ => occ.Index)
+                    .ToList()
+                )
+                .Select(occurances => CombineFirstAndLastDigit(occurances))
+                .Sum();
+        }
+
+        private static IEnumerable<Occurance> FindOccurances(Digit digit, string haystack, Func<Digit,string[]> findingStrategy)
+        {
+            var needles = findingStrategy(digit);
+            foreach (var needle in needles)
+            {
+                var first = new Occurance() {
+                    Index = haystack.IndexOf(needle),
+                    Digit = digit
+                };
+                var last = new Occurance(){
+                    Index = haystack.LastIndexOf(needle),
+                    Digit = digit
+                };
+                if (first.Index > -1) {
+                    yield return first; 
+                    yield return last;
+                }
+            };
+        }
+
+        private static long CombineFirstAndLastDigit(List<Occurance> occurances)
+        {
+            var first = occurances.First();
+            var last = occurances.Last();
+            var calibrationValue = long.Parse(
+                first.Digit.AsNumberStr + last.Digit.AsNumberStr
+            );
+
+            return calibrationValue;
+        }
+
+        public static List<string> LoadCalibrationDocument(string inputTxt)
+        {
+            var lines = File
                 .ReadAllLines(inputTxt)
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Select(s => s.Trim())
+                .ToList();
 
-
-             //.GroupByLineSeperator()
-             
-             //.SelectMany(r => r.Splizz(",", ";"))
-             //.Where(a => a.foo == '#')
-             //.Select(int.Parse)
-             //.Select(long.Parse)  
-             //  .Select(s => s.ParseRegex(@"^mem\[(\d+)\] = (\d+)$", m => new Foo<Point2>()
-             //  {
-             //      X = int.Parse(m.Groups[1].Value),
-             //      Y = int.Parse(m.Groups[2].Value),
-             //      A = m.Groups[1].Value,
-             //      B = m.Groups[2].Value,
-             //  }))
-             //.Where(f = f)
-             //.ToDictionary(
-             //    (a) => new Vector3(a.x, a.y),
-             //    (a) => new Foo(new Vector3(a.x, a.y))
-             //);
-             //.ToArray()
-             .ToList()
-            ;
-
-            return foos;
+            return lines;
         }
     }
 }
