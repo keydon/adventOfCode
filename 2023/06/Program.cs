@@ -8,17 +8,22 @@ namespace aoc
 {
     record Race 
     {
-        
-        public int No { get; set; }
-        public int Time { get; set; }
-        public int Distance { get; set; }
+        public long Time { get; set; }
+        public long Distance { get; set; }
 
-        internal IEnumerable<Race> SelectPossibleCombinations()
+        internal IEnumerable<Race> GeneratePossibleCombinations()
         {
-            return Enumerable.Range(0, Time)
-                .Select(t => new Race(){
-                     No = No, Time = t, Distance = (t*(Time-t)*1) })
+            return LongRange.Generate(0, Time)
+                .Select(t => Race.WithTimes(t, Time -t))
                 .Where(r => r.Distance > Distance);
+        }
+
+        static Race WithTimes(long charging, long moving){
+            var speed = charging * 1;
+            return new Race(){
+                Time = charging + moving,
+                Distance = speed * moving
+            };
         }
     }
     class Program
@@ -26,20 +31,25 @@ namespace aoc
         static void Main(string[] args)
         {
             Report.Start();
-            var races = LoadFoos("input.txt");
-            //races = LoadFoos("sample.txt");
-            races.Debug("Races").ToList();
-
-            races.Select(
-                r => r.SelectPossibleCombinations().Count()
+            
+            var racesI = LoadRacesPartI("input.txt");
+            racesI.Select(
+                    r => r.GeneratePossibleCombinations().Count()
                 )
-                .Debug()
-                .MultiplyAll().AsResult1();
+                .MultiplyAll()
+                .AsResult1();
+
+            var racesII = LoadRacesPartII("input.txt");
+            racesII.Select(
+                    r => r.GeneratePossibleCombinations().Count()
+                )
+                .MultiplyAll()
+                .AsResult2();
 
             Report.End();
         }
 
-        public static IEnumerable<Race> LoadFoos(string inputTxt)
+        public static IEnumerable<Race> LoadRacesPartI(string inputTxt)
         {
             var foos = File
                 .ReadAllLines(inputTxt)
@@ -48,36 +58,28 @@ namespace aoc
 
             var times = foos.First().Splizz(":", " ").Skip(1).ToList();
             var distances = foos.Last().Splizz(":", " ").Skip(1).ToList();
-            var races = times.Zip(distances).Select((z, i) => new Race() {
-                Time = int.Parse(z.First),
-                Distance = int.Parse(z.Second),
-                No = i+1
+            var races = times.Zip(distances)
+              .Select((z, i) => new Race() {
+                Time = long.Parse(z.First),
+                Distance = long.Parse(z.Second)
             });
             return races;
+        }
+        public static IEnumerable<Race> LoadRacesPartII(string inputTxt)
+        {
+            var foos = File
+                .ReadAllLines(inputTxt)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim());
 
-             //.GroupByLineSeperator()
-             //.Parse2DMap((p, t) => new Foo<Point2> { Pos = p, A = t })
-             //.SelectMany(r => r.Splizz(",", ";"))
-             //.Where(a => a.foo == '#')
-             //.Select(int.Parse)
-             //.Select(long.Parse)  
-             //  .Select(s => s.ParseRegex(@"^mem\[(\d+)\] = (\d+)$", m => new Foo<Point2>()
-             //  {
-             //      X = int.Parse(m.Groups[1].Value),
-             //      Y = int.Parse(m.Groups[2].Value),
-             //      A = m.Groups[1].Value,
-             //      B = m.Groups[2].Value,
-             //  }))
-             //.Where(f = f)
-             //.ToDictionary(
-             //    (a) => new Vector3(a.x, a.y),
-             //    (a) => new Foo(new Vector3(a.x, a.y))
-             //);
-             //.ToArray()
-            // (()).ToList()
-            //;
-
-            //return foos;
+            var times = foos.First().Splizz(":").Skip(1).ToList();
+            var distances = foos.Last().Splizz(":").Skip(1).ToList();
+            var races = times.Zip(distances)
+              .Select((z, i) => new Race() {
+                Time = long.Parse(z.First.Replace(" ", "")),
+                Distance = long.Parse(z.Second.Replace(" ", "")),
+            });
+            return races;
         }
     }
 }
